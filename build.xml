@@ -71,6 +71,7 @@
 
 	<target name="clean-all" depends="clean" description="Cleans the build, doc AND dist directories">
 		<delete dir="${dir.dist}" />
+		<delete dir="${dir.scripts}\${dir.cls}" />
 	</target>
 
 	<target name="build" depends="clean" description="Compiles the sources and copies the resources">
