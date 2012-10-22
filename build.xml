@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<project name="dft-experiment" basedir=".">
+<project name="project" basedir=".">
 
 	<!-- Property definition for the app -->
 	<property name="app.name" 			value="${ant.project.name}" />
