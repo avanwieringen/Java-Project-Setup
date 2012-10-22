@@ -1,0 +1,178 @@
+<?xml version="1.0"?>
+<project name="dft-experiment" basedir=".">
+
+	<!-- Property definition for the app -->
+	<property name="app.name" 			value="${ant.project.name}" />
+	<property name="app.fullname" 		value="Empty project" />
+	<property name="app.vendor" 		value="None" />
+	<property name="app.version"		value="0.1" />
+	<property name="app.createdby"		value="Arjan van Wieringen &lt;arjan.van.wieringen@gmail.com&gt;" />
+	<property name="app.basepackage"	value="com.example" />
+	<property name="app.mainclass"		value="${app.basepackage}.Application" />
+
+	<!-- Properties of the 1st level directories -->
+	<property name="dir.src"  			value="src" />
+	<property name="dir.test" 			value="test" />
+	<property name="dir.lib"			value="lib" />
+	<property name="dir.build"			value="build" />
+	<property name="dir.dist"	 		value="dist" />
+	<property name="dir.doc"			value="doc" />
+	<property name="dir.scripts"		value="scripts" />
+
+	<!-- Properties of the 2nd level directories -->
+	<property name="dir.cls"			value="classes" />
+	<property name="dir.res"			value="resources" />
+	<property name="dir.jav"			value="java" />
+
+	<!-- Classpath definitions -->
+	<path id="classpath.build">
+		<fileset dir="${dir.lib}">
+	     	<include name="**/*.jar" />
+	    	<exclude name="**/junit*" />
+	    </fileset>
+	</path>
+
+	<path id="classpath.junit">
+		<pathelement location="${dir.build}\${dir.cls}" />
+		<pathelement location="${dir.test}\${dir.res}" />
+		<pathelement location="${dir.test}\${dir.cls}" />
+		<fileset dir="${dir.lib}">
+	    	<include name="**/*.jar" />
+	    </fileset>
+	</path>
+
+	<path id="classpath.scripts">
+		<pathelement location="${dir.build}\${dir.cls}" />
+		<pathelement location="${dir.build}\${dir.res}" />
+		<fileset dir="${dir.lib}">
+	     	<include name="**/*.jar" />
+	    	<exclude name="**/junit*" />
+	    	<exclude name="**/codemodel*" />
+	    </fileset>
+	</path>
+
+	<path id="classpath.dist">
+		<fileset dir="${dir.dist}\${dir.lib}">
+			<include name="**/*.jar" />
+	    	<exclude name="**/junit*" />
+	    	<exclude name="**/codemodel*" />
+	    </fileset>
+	</path>
+
+	<!-- Targets -->
+	<target name="clean" description="Cleans the build and doc directories">
+		<delete dir="${dir.build}" />
+		<delete dir="${dir.doc}" />
+	</target>
+
+	<target name="clean-tests" description="Cleans the test classes directory">
+		<delete dir="${dir.test}\${dir.cls}" />
+	</target>
+
+	<target name="clean-all" depends="clean" description="Cleans the build, doc AND dist directories">
+		<delete dir="${dir.dist}" />
+	</target>
+
+	<target name="build" depends="clean" description="Compiles the sources and copies the resources">
+		<mkdir dir="${dir.build}" /> 
+		<mkdir dir="${dir.build}\${dir.cls}" />
+		<mkdir dir="${dir.build}\${dir.res}" />
+		<copy todir="${dir.build}\${dir.res}">
+			<fileset dir="${dir.src}\${dir.res}">
+				<include name="**/*" />
+			</fileset>
+		</copy>
+		<javac srcdir="${dir.src}\${dir.jav}" destdir="${dir.build}\${dir.cls}" classpathref="classpath.build" includeantruntime="false">
+			<compilerarg value="-Xlint:deprecation"/>
+		</javac>
+	</target>
+
+	<target name="run-build" depends="build" description="Runs the application from the compiled sources">
+		<java classname="${app.mainclass}" fork="true">
+			<classpath>
+				<path refid="classpath.build" />
+				<pathelement path="${dir.build}\${dir.cls}" />
+				<pathelement path="${dir.build}\${dir.res}" />
+			</classpath>
+		</java>
+	</target>
+
+	<target name="docs" depends="build" description="Generate JavaDoc">
+		<mkdir dir="${dir.doc}" />
+		<javadoc destdir="${dir.doc}">
+			<classpath>
+				<path refid="classpath.build" />
+			</classpath>
+			<fileset dir="${dir.src}\${dir.jav}">
+				<include name="**/*.java" />
+			</fileset>
+		</javadoc>
+	</target>
+
+	<target name="build-tests" depends="clean-tests, build" description="Compiles the test sources">
+		<mkdir dir="${dir.test}\${dir.cls}" />
+		<javac srcdir="${dir.test}\${dir.jav}" destdir="${dir.test}\${dir.cls}" classpathref="classpath.junit" includeantruntime="false" />
+	</target>
+
+	<target name="test" depends="build-tests" description="Run tests using JUnit 4">
+		<mkdir dir="${dir.test}\${dir.cls}" />
+		<junit fork="true" haltonfailure="yes">
+	    	<classpath refid="classpath.junit" />
+	      	<formatter type="brief" usefile="false" />
+	      	<batchtest>
+	        	<fileset dir="${dir.test}\${dir.jav}">
+	       			<include name="**/*Test.java" />
+	       		</fileset>
+	      	</batchtest>
+	    </junit>
+	</target>
+
+	<target name="run-script" depends="build">
+		<delete dir="${dir.scripts}\${dir.cls}" />
+		<mkdir dir="${dir.scripts}\${dir.cls}" />
+		<javac srcdir="${dir.scripts}\${dir.jav}" destdir="${dir.scripts}\${dir.cls}" classpathref="classpath.scripts" includeantruntime="false" />
+		<java classname="${script.class}" fork="true">
+			<classpath>
+				<path refid="classpath.scripts" />
+				<pathelement path="${dir.scripts}\${dir.cls}" />
+			</classpath>
+		</java>		
+	</target>
+	
+	<target name="dist" depends="clean-all, build" description="Create runnable distribution and tar.gz it">
+		<mkdir dir="${dir.dist}" />
+		<mkdir dir="${dir.dist}\${dir.res}" />
+		<mkdir dir="${dir.dist}\${dir.lib}" />
+		<copy todir="${dir.dist}\${dir.res}">
+			<fileset dir="${dir.build}\${dir.res}">
+				<include name="**/*" />
+			</fileset>
+		</copy>
+		<copy todir="${dir.dist}\${dir.lib}">
+			<fileset dir="${dir.lib}">
+				<include name="**/*.jar" />
+	    		<exclude name="**/junit*" />
+	    	</fileset>
+		</copy>
+		<manifestclasspath property="classpath.manifest.libs" jarfile="${dir.dist}\${app.name}-${app.version}.jar">
+			<classpath refid="classpath.dist" />
+		</manifestclasspath>
+		<jar destfile="${dir.dist}\${app.name}-${app.version}.jar" basedir="${dir.build}\${dir.cls}">
+			<manifest>
+				<attribute name="Main-Class" value="${app.mainclass}" />
+				<attribute name="Built-By" value="${user.name}"/>
+				<attribute name="Implementation-Vendor" value="${app.vendor}"/>
+				<attribute name="Implementation-Title" value="${app.fullname}"/>
+				<attribute name="Implementation-Version" value="${app.version}"/>				
+				<attribute name="Class-Path" value="${classpath.manifest.libs} ./${dir.res}/" />
+			</manifest>
+		</jar>
+		<tar  destfile="${dir.dist}/${app.name}-${app.version}.tar"     basedir="${dir.dist}"/>
+		<gzip destfile="${dir.dist}/${app.name}-${app.version}.tar.gz"  src="${dir.dist}/${app.name}-${app.version}.tar"/>
+		<delete file="${dir.dist}/${app.name}-${app.version}.tar" />
+	</target>
+
+	<target name="all" depends="build, test, dist, docs" description="Build, run unit tests, build distibution and generate documentation">
+		<echo message="All tasks run succesfully" />
+	</target>
+</project>
