@@ -3,12 +3,12 @@
 
 	<!-- Property definition for the app -->
 	<property name="app.name" 			value="${ant.project.name}" />
-	<property name="app.fullname" 		value="Empty project" />
-	<property name="app.vendor" 		value="None" />
+	<property name="app.fullname" 		value="Project" />
+	<property name="app.vendor" 		value="Vendor" />
 	<property name="app.version"		value="0.1" />
 	<property name="app.createdby"		value="Arjan van Wieringen &lt;arjan.van.wieringen@gmail.com&gt;" />
-	<property name="app.basepackage"	value="com.example" />
-	<property name="app.mainclass"		value="${app.basepackage}.Application" />
+	<property name="app.basepackage"	value="com.project" />
+	<property name="app.mainclass"		value="${app.basepackage}.application.Application" />
 
 	<!-- Properties of the 1st level directories -->
 	<property name="dir.src"  			value="src" />
@@ -47,7 +47,6 @@
 		<fileset dir="${dir.lib}">
 	     	<include name="**/*.jar" />
 	    	<exclude name="**/junit*" />
-	    	<exclude name="**/codemodel*" />
 	    </fileset>
 	</path>
 
@@ -55,7 +54,6 @@
 		<fileset dir="${dir.dist}\${dir.lib}">
 			<include name="**/*.jar" />
 	    	<exclude name="**/junit*" />
-	    	<exclude name="**/codemodel*" />
 	    </fileset>
 	</path>
 
@@ -71,10 +69,9 @@
 
 	<target name="clean-all" depends="clean" description="Cleans the build, doc AND dist directories">
 		<delete dir="${dir.dist}" />
-		<delete dir="${dir.scripts}\${dir.cls}" />
 	</target>
 
-	<target name="build" depends="clean" description="Compiles the sources and copies the resources">
+	<target name="build" depends="clean, build-info" description="Compiles the sources and copies the resources">
 		<mkdir dir="${dir.build}" /> 
 		<mkdir dir="${dir.build}\${dir.cls}" />
 		<mkdir dir="${dir.build}\${dir.res}" />
@@ -128,7 +125,7 @@
 	    </junit>
 	</target>
 
-	<target name="run-script" depends="build">
+	<target name="run-script">
 		<delete dir="${dir.scripts}\${dir.cls}" />
 		<mkdir dir="${dir.scripts}\${dir.cls}" />
 		<javac srcdir="${dir.scripts}\${dir.jav}" destdir="${dir.scripts}\${dir.cls}" classpathref="classpath.scripts" includeantruntime="false" />
@@ -158,19 +155,38 @@
 		<manifestclasspath property="classpath.manifest.libs" jarfile="${dir.dist}\${app.name}-${app.version}.jar">
 			<classpath refid="classpath.dist" />
 		</manifestclasspath>
-		<jar destfile="${dir.dist}\${app.name}-${app.version}.jar" basedir="${dir.build}\${dir.cls}">
+		<jar destfile="${dir.dist}\${app.name}-${buildinfo.version}.${buildinfo.build}.jar" basedir="${dir.build}\${dir.cls}">
 			<manifest>
 				<attribute name="Main-Class" value="${app.mainclass}" />
 				<attribute name="Built-By" value="${user.name}"/>
 				<attribute name="Implementation-Vendor" value="${app.vendor}"/>
 				<attribute name="Implementation-Title" value="${app.fullname}"/>
-				<attribute name="Implementation-Version" value="${app.version}"/>				
+				<attribute name="Implementation-Version" value="${app.version}-${buildinfo.build}"/>				
 				<attribute name="Class-Path" value="${classpath.manifest.libs} ./${dir.res}/" />
 			</manifest>
 		</jar>
-		<tar  destfile="${dir.dist}/${app.name}-${app.version}.tar"     basedir="${dir.dist}"/>
-		<gzip destfile="${dir.dist}/${app.name}-${app.version}.tar.gz"  src="${dir.dist}/${app.name}-${app.version}.tar"/>
-		<delete file="${dir.dist}/${app.name}-${app.version}.tar" />
+		<tar  destfile="${dir.dist}/${app.name}-${buildinfo.version}.${buildinfo.build}.tar"     basedir="${dir.dist}"/>
+		<gzip destfile="${dir.dist}/${app.name}-${buildinfo.version}.${buildinfo.build}.tar.gz"  src="${dir.dist}/${app.name}-${buildinfo.version}.${buildinfo.build}.tar" />
+		<delete file="${dir.dist}/${app.name}-${buildinfo.version}.${buildinfo.build}.tar" />
+	</target>
+	
+	<target name="build-info" description="Create BuildInfo class">
+		<exec executable="git" outputproperty="git-version">
+			<arg value="rev-parse" />
+			<arg value="--short" />
+			<arg value="HEAD" />
+		</exec>
+		<java classname="buildtools.BuildInfoGenerator" fork="true" classpathref="classpath.build">
+			<arg value="-version" />
+			<arg value="${app.version}" />
+			<arg value="-package-name" />
+			<arg value="${app.basepackage}.buildinfo" />
+			<arg value="-base-dir-java" />
+			<arg value="${dir.src}/${dir.jav}" />
+			<!--<arg value="-build" />
+			<arg value="${git-version}" />-->
+		</java>
+		<loadproperties srcfile="buildinfo.properties" />
 	</target>
 
 	<target name="all" depends="build, test, dist, docs" description="Build, run unit tests, build distibution and generate documentation">
